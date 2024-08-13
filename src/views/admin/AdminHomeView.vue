@@ -1,9 +1,9 @@
 <script setup>
-import AminLayout from '@/layouts/AminLayout.vue';
+import AdminLayout from '@/layouts/AdminLayout.vue';
 </script>
 
 <template>
-    <AminLayout>
+    <AdminLayout>
         <section class="flex">
             <div class="w-72 bg-[#DEE0E2] text-white min-h-screen p-4">
                 <ul class="font-bold text-l pt-4 space-y-2">
@@ -38,5 +38,5 @@ import AminLayout from '@/layouts/AminLayout.vue';
                 </div>
             </div>    
         </section>
-    </AminLayout>
+    </AdminLayout>
 </template>

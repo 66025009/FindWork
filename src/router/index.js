@@ -8,7 +8,7 @@ import ForgetView from '../views/ForgetView.vue'
 import ManageView from '../views/ManageView.vue'
 import NetworkView from '@/views/user/NetworkView.vue'
 import NotificationsView from '@/views/user/NotificationsView.vue'
-import AminHomeView from '@/views/amin/AminHomeView.vue'
+import AdminHomeView from '@/views/admin/AdminHomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,9 +54,9 @@ const router = createRouter({
       component: NotificationsView
     },
     {
-      path: '/aminhome',
-      name: 'aminhome',
-      component: AminHomeView
+      path: '/adminhome',
+      name: 'adminhome',
+      component: AdminHomeView
     },
   ]
 })
