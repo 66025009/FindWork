@@ -1,12 +1,77 @@
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router'
+import { useAccountStore } from '@/stores/account';
 
-import { RouterLink } from 'vue-router'
-const showPassword = ref(false);
+const router = useRouter()
+const accountStore = useAccountStore()
+
+const showPassword = ref(false)
+const email = ref('')
+const password = ref('')
+const confirm = ref('')
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value;
-};
+}
+
+const isPasswordValid = (password) => {
+  // ตรวจสอบความยาวของรหัสผ่าน
+  const hasMinLength = password.length >= 8;
+  // ตรวจสอบว่ามีตัวพิมพ์ใหญ่
+  const hasUpperCase = /[A-Z]/.test(password);
+  // ตรวจสอบว่ามีตัวพิมพ์เล็ก
+  const hasLowerCase = /[a-z]/.test(password);
+  // ตรวจสอบว่ามีตัวอักษรพิเศษ
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  
+  return hasMinLength && hasUpperCase && hasLowerCase && hasSpecialChar;
+}
+
+const register = async () => {
+  if (password.value !== confirm.value) {
+    alert('รหัสผ่านไม่ตรงกัน')
+    return
+  }
+
+  if (!isPasswordValid(password.value)) {
+    alert('อย่างน้อย 8 ตัวอักษร พิมพ์เล็ก พิมพ์ใหญ่และตัวอักษรพิเศษ')
+    return
+  }
+
+  try {
+    await accountStore.createEmailAndPassword(email.value, password.value)
+    // Navigate to another page or show a success message
+    router.push({ name: 'experience-work' })
+  } catch (error) {
+      console.log('error',error)
+  }
+}
+
+const loginG = async () => {
+  try {
+    await accountStore.signInWithGoogle()                             
+    router.push({ name: 'experience-work'})
+  } catch (error) {
+    console.log('error', error)
+  }
+}
+
+const loginF = async () => {
+  try {
+    await accountStore.signInWithFacebook()                             
+    router.push({ name: 'experience-work'})
+  } catch (error) {
+    console.log('error', error)
+  }
+}
+
+const loginWithLine = () => {
+  const state = 'd8f9b5c6a8e5f3g9'; // ค่าที่ไม่ซ้ำกัน
+  const lineLoginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2006078548&redirect_uri=http://localhost:5177/callback&state=${state}&scope=profile%20openid`;
+  window.location.href = lineLoginUrl;
+}
+
 </script>
 
 <template>
@@ -23,11 +88,11 @@ const togglePasswordVisibility = () => {
             <div class="space-y-2 pt-6"> 
               <label class="input input-bordered flex items-center gap-2 w-96">
                 Email
-                <input type="text" class="grow" placeholder="email@gmail.com" />
+                <input v-model="email" type="text" class="grow" placeholder="email@gmail.com" />
               </label>
               <label class="input input-bordered flex items-center gap-2">
                 Password
-                <input type="password" class="grow" value="">
+                <input v-model="password" type="password" class="grow" value="">
                 <span 
                   @click="togglePasswordVisibility"
                   class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer z-10">
@@ -36,7 +101,7 @@ const togglePasswordVisibility = () => {
               <p class="text-s text-black/50 text-left">อย่างน้อย 8 ตัวอักษร <br> พิมพ์เล็ก พิมพ์ใหญ่และตัวอักษรพิเศษ</p>
               <label class="input input-bordered flex items-center gap-2">
                 Confirm
-                <input type="password" class="grow" value="">
+                <input v-model="confirm" type="password" class="grow" value="">
                 <span 
                   @click="togglePasswordVisibility"
                   class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer z-10">
@@ -46,14 +111,20 @@ const togglePasswordVisibility = () => {
                 <RouterLink :to="{ name: 'login'}" class="text-left text-blue">ลงชื่อเข้าใช้</RouterLink>
                 <RouterLink :to="{ name: 'forget'}" class="text-right text-sky">ลืมรหัสผ่าน</RouterLink>
               </div>
-              <RouterLink :to="{ name: 'home'}" class="btn bg-green hover:bg-greenhover text-l font-bold text-white w-96 p-4">ลงชื่อเข้าใช้</RouterLink>
+              <button @click="register" class="btn bg-green hover:bg-greenhover text-l font-bold text-white w-96 p-4">ลงชื่อเข้าใช้</button>
             </div>
             <div class="divider divider-neutral py-3 ">หรือ</div>
             <div class="flex justify-center gap-16 pt-4">
-                <img src="/G.png" alt="picture" class="h-14 w-14">
-                <img src="/F.png" alt="picture" class="h-[52px] w-[52px]">
-                <img src="/L.png" alt="picture" class="h-[52px] w-[52px]">
-              </div>
+              <button @click="loginG">
+                  <img src="/G.png" alt="Google" class="h-14 w-14">
+              </button>
+              <button @click="loginF">
+                  <img src="/F.png" alt="Facebook" class="h-[52px] w-[52px]">
+              </button>
+              <button @click="loginWithLine">
+                  <img src="/L.png" alt="Line" class="h-[52px] w-[52px]">
+              </button>
+            </div>
           </div>
         </div>
       </div>

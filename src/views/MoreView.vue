@@ -1,7 +1,22 @@
 <script setup>
-import { ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
+
+import { useAccountStore } from '@/stores/account'
+
 import UserLayout from '@/layouts/UserLayout.vue';
+
+const accountStore = useAccountStore()
+const router = useRouter();  // Import and define the router
+
+const login = async () => {
+  try {
+    await accountStore.signInWithGoogle()
+    router.push({ name: 'home'})  // Use the router to navigate
+  } catch (error) {
+    console.log('error', error)
+  }
+}
 
 const showMore = ref(false);
 
@@ -15,7 +30,7 @@ const toggleShowMore = () => {
         <section class="flex justify-center items-center mx-4 my-10">
             <div class="flex-col space-y-4 text-left mr-20">
                 <p class="text-xl font-bold"> ยินดีต้อนรับสู่ชุมชน <br> มืออาชีพของคุณ </p>
-                <button class="btn btn-wide btn-lg"> ลงชื่อเข้าใช้ด้วยอีเมล </button>
+                <button @click="login" class="btn btn-wide btn-lg"> ลงชื่อเข้าใช้ด้วยอีเมล </button>
                 <p class="text-l"> ไม่เคยเข้าร่วม FindWork ใช่หรือไม่ 
                     <RouterLink :to="{ name: 'register'}"><a class="link link-info"> เข้าร่วมเลย </a></RouterLink>
                 </p>

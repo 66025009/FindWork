@@ -1,40 +1,67 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { getAuth } from 'firebase/auth'
+import { ref, onMounted, computed } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { useAccountStore } from '@/stores/account'
+import { useUserStore } from '@/stores/user/user'
+
+// สร้าง instance ของ userStore
+const router = useRouter()
+const accountStore = useAccountStore()
+const userStore = useUserStore()
+const auth = getAuth()
 
 const activeTab = ref(1);
 
 const tabs = [
-    { id: 1, label: 'หน้าแรก', icon: 'home', route: '/' },
+    { id: 1, label: 'หน้าแรก', icon: 'home', route: '/home' },
     { id: 2, label: 'เครือข่าย', icon: 'groups', route: '/network' },
     { id: 3, label: 'การแจ้งเตือน', icon: 'notifications', route: '/notifications' }
 ];
+
+// ดึงข้อมูลผู้ใช้
+const userData = computed(() => {
+    return {
+        profileImage: userStore.currentUser?.profileImage || '/profileImage.jpg',
+    }
+})
 
 const setActiveTab = (tabIndex) => {
     activeTab.value = tabIndex;
     localStorage.setItem('activeTab', tabIndex); 
 };
 
-const logout = () => {
-    localStorage.removeItem('activeTab');
-    activeTab.value = 1;
-};
-
-// เมื่อคอมโพเนนต์ถูกสร้าง, โหลดค่า activeTab จาก localStorage
-onMounted(() => {
-    const savedTab = localStorage.getItem('activeTab');
-    if (savedTab) {
-        activeTab.value = parseInt(savedTab);
-    } else {
-        activeTab.value = 1; // รีเซ็ตเป็นหน้าแรกหากไม่มีค่าใน localStorage
+const logout = async () => {
+    try {
+        await accountStore.logout()
+        router.push({ name: 'more' });
+    } catch (error) {
+        console.error('Error during logout:', error)
     }
-});
+}
+
+// เมื่อคอมโพเนนต์ถูกสร้าง, โหลดค่า activeTab จาก localStorage และข้อมูลผู้ใช้
+onMounted(async () => {
+    const savedTab = localStorage.getItem('activeTab');
+    activeTab.value = savedTab ? parseInt(savedTab) : 1;
+
+    try {
+        const user = auth.currentUser
+        if (user) {
+            await userStore.loadUserByUid(user.uid)  // เรียกใช้ action ของ userStore
+        } else {
+            console.error('No user is logged in.')
+        }
+    } catch (error) {
+        console.error('Error loading user data:', error)
+    }
+})
 </script>
 
 <template>
     <div class="navbar bg-indigo relative">
         <div class="flex-1 ml-6"> 
-            <a href="/">
+            <a href="/home">
                 <img src="/logo.jpg" alt="Logo" class="h-70">
             </a>
         </div>
@@ -80,9 +107,9 @@ onMounted(() => {
         <div class="dropdown dropdown-end px-10">
             <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
                 <div class="w-10 rounded-full">
-                <img
-                    alt="Tailwind CSS Navbar component"
-                    src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+                    <img
+                        alt="Avatar"
+                        :src="userData.profileImage" />
                 </div>
             </div>
             <ul
@@ -91,28 +118,28 @@ onMounted(() => {
                 <div tabindex="0" role="button" class="btn-circle avatar flex items-center w-full p-5 mt-2">
                     <div class="w-12 rounded-full">
                         <img
-                            alt="Tailwind CSS Navbar component"
-                            src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+                            alt="Avatar"
+                            :src="userData.profileImage" />
                     </div>
-                    <span class="ml-4">ชื่อ-นามสกุล</span>
+                    <div v-if="userStore.loaded && userStore.currentUser" class="text-center pt-10 text-black">
+                        <h1 class="text-s font-bold">{{ userStore.currentUser.name }}</h1>
+                    </div>
                 </div>
 
                 <li class="p-4">
-                <a class="btn btn-outline btn-primary">โปรไฟล์</a>
+                    <RouterLink :to="{ name: 'profile'}" class="btn btn-outline btn-primary">โปรไฟล์</RouterLink>
                 </li>
 
                 <ul class="font-bold border-t-2 pt-2 pl-2"><a>จัดการ</a>
                     <ul class="font-normal">
-                        <li><a href="#"><span class="material-symbols-outlined">Encrypted</span><h2> การตั้งค่ารหัสผ่าน </h2></a></li>
+                        <RouterLink :to="{name: 'edit-profile'}"><li><a href="#"><span class="material-symbols-outlined">Encrypted</span><h2> ตั้งค่าหน้าโปรไฟล์ </h2></a></li></RouterLink>
                         <li><a href="#"><span class="material-symbols-outlined">Help</span><h2> ศูนย์ช่วยเหลือ </h2></a></li>
                         <li><a href="#"><span class="material-symbols-outlined">chat_info</span><h2> รายงานปัญหา </h2></a></li>
                     </ul>
                 </ul>
 
                 <li class="text-red-600 border-t-2 pt-2">
-                    <RouterLink :to="{ name: 'more' }" @click="logout">
-                        <a>ออกจากระบบ</a>
-                    </RouterLink>
+                    <a href="#" @click.prevent="logout">ออกจากระบบ</a>
                 </li>
             </ul>
         </div>
