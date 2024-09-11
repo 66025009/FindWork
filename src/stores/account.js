@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { useUserStore } from '@/stores/user/user'
 import {
     GoogleAuthProvider,
     FacebookAuthProvider,
@@ -27,8 +26,7 @@ import {
     setDoc,
     updateDoc,
     deleteDoc,
-    serverTimestamp,
-    writeBatch
+    serverTimestamp
 } from 'firebase/firestore'
 
 const googleProvider = new GoogleAuthProvider()
@@ -47,42 +45,61 @@ export const useAccountStore = defineStore('account', {
     actions: {
         async initializeAuth() {
             return new Promise((resolve) => {
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        this.user = user
-                        console.log('user', user)
-
-                        this.isLoggerIn = true
-                        const storedProfile = localStorage.getItem('user-profile')
-                        if (storedProfile) {
-                            this.profile = JSON.parse(storedProfile)
-                        } else {
-                            const docRef = doc(db, 'user', user.uid)
-                            const docSnap = await getDoc(docRef)
-
-                            if (docSnap.exists()) {
-                                this.profile = docSnap.data()
-                                console.log('profile', this.profile)
-                                if (this.profile.role === 'admin') {
-                                    this.isAdmin = true
-                                }
-                                this.profile.email = user.email
-                            }
-                        }
-                        resolve(true)
+              onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                  this.user = user
+                  console.log('user', user)
+          
+                  this.isLoggerIn = true
+                  const storedProfile = localStorage.getItem('user-profile')
+                  if (storedProfile) {
+                    this.profile = JSON.parse(storedProfile)
+                    this.isAdmin = this.profile.role === 'admin' // ตรวจสอบว่าผู้ใช้เป็นแอดมินจากข้อมูลใน localStorage
+                  } else {
+                    // Check admin collection first
+                    const adminDocRef = doc(db, 'admin', user.uid)
+                    const adminDocSnap = await getDoc(adminDocRef)
+          
+                    if (adminDocSnap.exists()) {
+                      this.profile = adminDocSnap.data()
+                      this.isAdmin = true
+                      this.profile.email = user.email
                     } else {
-                        resolve(false)
+                      // Check user collection
+                      const userDocRef = doc(db, 'user', user.uid)
+                      const userDocSnap = await getDoc(userDocRef)
+          
+                      if (userDocSnap.exists()) {
+                        this.profile = userDocSnap.data()
+                        if (this.profile.role === 'admin') {
+                          this.isAdmin = true
+                        }
+                        this.profile.email = user.email
+                      }
                     }
-                })
+                    // Save profile to localStorage
+                    localStorage.setItem('user-profile', JSON.stringify(this.profile))
+                  }
+                  resolve(true)
+                } else {
+                  // Clear profile and admin status if no user is logged in
+                  this.isLoggerIn = false
+                  this.isAdmin = false
+                  this.profile = {}
+                  localStorage.removeItem('user-profile')
+                  resolve(false)
+                }
+              })
             })
-        },
-
+          },
+          
+          
         async loadUserProfile() {
             if (!this.user || !this.user.uid) {
                 throw new Error('No user is logged in')
             }
             try {
-                const docRef = doc(db, 'user', this.user.uid)
+                const docRef = doc(db, this.isAdmin ? 'admin' : 'user', this.user.uid)
                 const docSnap = await getDoc(docRef)
                 if (docSnap.exists()) {
                     this.profile = docSnap.data()
@@ -109,7 +126,7 @@ export const useAccountStore = defineStore('account', {
                     companyName: userData.companyName || '',
                     university: userData.university || ''
                 }
-                const userRef = doc(db, `user/${this.user.uid}`)
+                const userRef = doc(db, this.isAdmin ? 'admin' : 'user', this.user.uid)
                 await updateDoc(userRef, updateUserData)
                 this.profile = { ...this.profile, ...updateUserData }
                 console.log('Profile updated in Firestore:', updateUserData)
@@ -126,6 +143,13 @@ export const useAccountStore = defineStore('account', {
                 const result = await signInWithEmailAndPassword(auth, email, password)
                 this.user = result.user
                 this.isLoggerIn = true
+
+                // Check if the user is an admin
+                const docRef = doc(db, 'admin', this.user.uid)
+                const docSnap = await getDoc(docRef)
+                if (docSnap.exists()) {
+                    this.isAdmin = true
+                }
             } catch (error) {
                 console.log('Error signing in:', error.code)
                 switch (error.code) {
@@ -138,6 +162,56 @@ export const useAccountStore = defineStore('account', {
                 }
             }
         },
+
+        async signInEmailAdmin(email, password) {
+            try {
+                const result = await signInWithEmailAndPassword(auth, email, password)
+                this.user = result.user
+                this.isLoggerIn = true
+                this.isAdmin = true
+            } catch (error) {
+                console.log('Error signing in admin:', error.code)
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        throw new Error('อีเมลไม่ถูกต้อง')
+                    case 'auth/wrong-password':
+                        throw new Error('รหัสผ่านไม่ถูกต้อง')
+                    default:
+                        throw new Error('มีปัญหาเกี่ยวกับการล็อกอิน')
+                }
+            }
+        },
+
+        async createAdminAccount(email, password, name, job, profileImageUrl = '') {
+            try {
+                // สร้างผู้ใช้ใหม่ด้วยอีเมลและรหัสผ่าน
+                const result = await createUserWithEmailAndPassword(auth, email, password)
+                const user = result.user
+        
+                // อัปเดตโปรไฟล์ของผู้ใช้
+                await updateProfile(user, { displayName: name })
+        
+                // ข้อมูลของแอดมินที่ต้องการบันทึกใน Firestore
+                const adminProfile = {
+                    uid: user.uid,
+                    email: user.email,
+                    name: name,
+                    job: job,
+                    role: 'admin',
+                    createdAt: serverTimestamp(),
+                    profileImageUrl: profileImageUrl // เพิ่ม URL ของรูปโปรไฟล์
+                }
+        
+                // บันทึกข้อมูลลงในคอลเล็กชัน admin
+                await setDoc(doc(db, 'admin', user.uid), adminProfile)
+        
+                console.log('Admin account created successfully:', adminProfile)
+            } catch (error) {
+                console.error('Error creating admin account:', error)
+                throw new Error('ไม่สามารถสร้างบัญชีแอดมินได้: ' + error.message)
+            }
+        },
+        
 
         async signInWithGoogle() {
             try {
@@ -219,7 +293,7 @@ export const useAccountStore = defineStore('account', {
                 throw new Error('No user is currently signed in.')
             }
             try {
-                await deleteDoc(doc(db, 'user', user.uid))
+                await deleteDoc(doc(db, this.isAdmin ? 'admin' : 'user', user.uid)) // Delete from the correct collection
                 await user.delete()
             } catch (error) {
                 console.error('Error deleting account:', error)
@@ -227,23 +301,8 @@ export const useAccountStore = defineStore('account', {
             }
         },
 
-        async signInEmailAdmin(email, password) {
-            try {
-                const result = await signInWithEmailAndPassword(auth, email, password)
-                this.user = result.user
-                this.isLoggerIn = true
-                this.isAdmin = true
-            } catch (error) {
-                console.log('Error signing in admin:', error.code)
-                switch (error.code) {
-                    case 'auth/invalid-email':
-                        throw new Error('อีเมลไม่ถูกต้อง')
-                    case 'auth/wrong-password':
-                        throw new Error('รหัสผ่านไม่ถูกต้อง')
-                    default:
-                        throw new Error('มีปัญหาเกี่ยวกับการล็อกอิน')
-                }
-            }
-        },
+        async updatePostsWithNewProfile(updateUserData) {
+            // Implement your logic to update posts with new profile data
+        }
     }
 })

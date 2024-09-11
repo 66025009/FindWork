@@ -13,11 +13,34 @@ const password = ref('')
 const loginAdmin = async () => {
   try {
     await accountStore.signInEmailAdmin(email.value, password.value)
-    router.push({ name: 'admin-home'})
+    router.push({ name: 'admin-home' })
   } catch (error) {
-    eventStore.popupMessage('error', error.message)
+    let errorMessage = 'มีปัญหาเกี่ยวกับการล็อกอิน'
+    switch (error.code) {
+      case 'auth/invalid-email':
+        errorMessage = 'อีเมลไม่ถูกต้อง'
+        break
+      case 'auth/missing-password':
+        errorMessage = 'กรุณากรอกรหัสผ่าน'
+      break
+      case 'auth/wrong-password':
+        errorMessage = 'รหัสผ่านไม่ถูกต้อง'
+        break
+      case 'auth/user-not-found':
+        errorMessage = 'บัญชีผู้ใช้ไม่พบ'
+        break
+      case 'auth/network-request-failed':
+        errorMessage = 'เกิดข้อผิดพลาดเกี่ยวกับเครือข่าย'
+        break
+      default:
+        errorMessage = 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+        break
+    }
+    eventStore.popupMessage('Error signing in admin:', error)
   }
 }
+
+                        
 
 </script>
 <template>

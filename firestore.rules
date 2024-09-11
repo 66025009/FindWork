@@ -29,6 +29,15 @@ service cloud.firestore {
       allow create: if request.auth != null; // อนุญาตให้ผู้ใช้ที่เข้าสู่ระบบเท่านั้นสร้างความคิดเห็น
       allow write: if request.auth != null; // อนุญาตให้ผู้ใช้ที่เข้าสู่ระบบเท่านั้นเขียนความคิดเห็น
     }
+
+    match /admin/{adminId} {
+      allow create, update: if true;
+      allow read: if request.auth != null;
+    }
+    // Rules for other collections
+    match /user/{userId} {
+      allow read, write: if request.auth != null;
+    }
     
   }
 }

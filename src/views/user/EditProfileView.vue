@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db, storage } from '@/firebase'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import UserLayout from '@/layouts/UserLayout2.vue'
-import { useEventStore } from '@/stores/event';
+import { useEventStore } from '@/stores/event'
 
 const accountStore = useAccountStore()
 const eventStore = useEventStore()
@@ -85,7 +85,7 @@ const updateProfile = async () => {
     console.log('Profile updated and saved in localStorage:', JSON.stringify(userData)) // ตรวจสอบข้อมูล
     eventStore.popupMessage('success', 'บันทึกเสร็จสิ้น')
   } catch (error) {
-    eventStore.popupMessage('error', 'เกิดข้อผิดพลาด')
+    console.log('error', error)
   }
 }
 

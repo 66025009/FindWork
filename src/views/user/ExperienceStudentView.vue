@@ -17,8 +17,7 @@ const birthDate = ref('')
 const university = ref('')
 const province = ref('')
 const address = ref('')
-const profileProfile = ref('')  // เพิ่ม profileImage
-const profileBg = ref('')  
+
 
 const isFormValid = computed(() => {
   return name.value !== '' &&
@@ -44,8 +43,7 @@ const saveData = async () => {
           university: university.value,
           province: province.value,
           address: address.value,
-          profileProfile: profileProfile.value || null, // กำหนด profileImage เป็น null หรือค่าว่าง
-          profileBg: profileBg.value || null
+         
         });
 
         console.log({
@@ -55,8 +53,6 @@ const saveData = async () => {
           university: university.value,
           province: province.value,
           address: address.value,
-          profileProfile: profileProfile.value || null,
-          profileBg: profileBg.value || null
         });
         // นำทางไปยังหน้าหลักหลังจากบันทึกข้อมูลสำเร็จ
         router.push({ name: 'home' }) 

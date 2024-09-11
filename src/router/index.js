@@ -17,6 +17,7 @@ import ExperienceWorkView from '@/views/user/ExperienceWorkView.vue'
 import AdminLoginView from '@/views/admin/AdminLoginView.vue'
 import AdminHomeView from '@/views/admin/AdminHomeView.vue'
 import AdminPeopleView from '@/views/admin/AdminPeopleView.vue'
+import AdminFormView from '@/views/admin/AdminFormView.vue'
 import AccountUserView from '@/views/admin/user/AccountUserView.vue'
 import InformationView from '@/views/admin/user/InformationView.vue'
 import CommunityView from '@/views/admin/user/CommunityView.vue'
@@ -115,6 +116,12 @@ const router = createRouter({
       meta: { requiresAdmin: true } 
     },
     {
+      path: '/admin/form',
+      name: 'admin-form',
+      component: AdminFormView,
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/admin/account-user',
       name: 'admin-account-user',
       component: AccountUserView,
@@ -135,12 +142,14 @@ const router = createRouter({
   ]
 })
 
+
 router.beforeEach(async (to, from, next) => {
   const accountStore = useAccountStore()
   await accountStore.initializeAuth()
-  
+
+  // Check if the route requires admin privileges
   if (to.meta.requiresAdmin && !accountStore.isAdmin) {
-    next({ name: 'more' })
+    next({ name: 'more' }) // Redirect to a page for non-admin users
   } else {
     next()
   }

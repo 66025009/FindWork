@@ -2,46 +2,50 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAccountStore } from '@/stores/account'
+import { getDoc, doc } from 'firebase/firestore'
+import { db } from '@/firebase'
 
 const router = useRouter()
 const route = useRoute()
 const accountStore = useAccountStore()
 
 const pageData = [
-  {
-    name: 'หน้าหลัก',
-    route: '/admin/home',
-  },
-  {
-    name: 'ฟอร์ม',
-    route: '/admin/form',
-  },
-  {
-    name: 'บุคลากร',
-    route: '/admin/people',
-  }
+  { name: 'หน้าหลัก', route: '/admin/home' },
+  { name: 'ฟอร์ม', route: '/admin/form' },
+  { name: 'บุคลากร', route: '/admin/people' }
 ]
 
 const managementData = [
-  {
-    name: 'บัญชีผู้ใช้งาน',
-    route: '/admin/account-user',
-  },
-  {
-    name: 'ข้อมูลข่าวสาร',
-    route: '/admin/information',
-  },
-  {
-    name: 'กลุ่มคอมมูนิตี้',
-    route: '/admin/community',
-  },
+  { name: 'บัญชีผู้ใช้งาน', route: '/admin/account-user' },
+  { name: 'ข้อมูลข่าวสาร', route: '/admin/information' },
+  { name: 'กลุ่มคอมมูนิตี้', route: '/admin/community' }
 ]
 
 const currentPath = ref(route.path)
+const profileImageUrl = ref('')
+const adminName = ref('')
 
-onMounted(() => {
+onMounted(async () => {
   currentPath.value = route.path
+  await fetchAdminProfile()
 })
+
+const fetchAdminProfile = async () => {
+  try {
+    const user = accountStore.user
+    if (user) {
+      const docRef = doc(db, 'admin', user.uid)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        const adminData = docSnap.data()
+        profileImageUrl.value = adminData.profileImageUrl
+        adminName.value = adminData.name
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching admin profile:', error)
+  }
+}
 
 const logout = async () => {
   try {
@@ -64,9 +68,7 @@ const logout = async () => {
     <div class="dropdown dropdown-end px-10">
       <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
         <div class="w-12 rounded-full">
-          <img
-            alt="Tailwind CSS Navbar component"
-            src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+          <img :src="profileImageUrl" alt="Profile" />
         </div>
       </div>
       <ul
@@ -74,16 +76,13 @@ const logout = async () => {
         class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-5 w-52 p-2 drop-shadow-lg">
         <div tabindex="0" role="button" class="btn-circle avatar flex items-center w-full p-5 mt-2">
           <div class="w-12 rounded-full">
-            <img
-              alt="Tailwind CSS Navbar component"
-              src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+            <img :src="profileImageUrl" alt="Profile" />
           </div>
-          <span class="ml-4">ชื่อ-นามสกุล</span>
+          <span class="ml-4">{{ adminName }}</span>
         </div>
 
-        <li class="p-4">
-          <a class="btn btn-outline btn-primary">โปรไฟล์</a>
-        </li>
+        <div class="p-2">
+        </div>
 
         <ul class="font-bold border-t-2 pt-2 pl-2">
           <summary>จัดการ</summary>

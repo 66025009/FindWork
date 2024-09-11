@@ -19,11 +19,13 @@ import { useUserStore } from '@/stores/user/user';
 
 export const usePostStore = defineStore('postStore', {
   state: () => ({
-    posts: [], // เก็บโพสต์ทั้งหมด
-    currentPost: null, // เก็บโพสต์ที่กำลังดู
-    userProfiles: {}, // เก็บโปรไฟล์ของผู้ใช้
-    comments: new Map(), // เก็บคอมเมนต์ของแต่ละโพสต์
-    otherPosts: [], // เก็บโพสต์ที่ไม่ใช่ของ user ปัจจุบัน
+    posts: [], 
+    currentPost: null,
+    userProfiles: {},
+    comments: new Map(),
+    otherPosts: [],
+    defaultProfileImage: '/profileImage.jpg', // กำหนดรูปเริ่มต้น
+    defaultBackgroundImage: '/path/to/default-background.jpg', // กำหนดรูปพื้นหลังเริ่มต้น
   }),
   actions: {
     async createPost(postData) {
@@ -33,9 +35,12 @@ export const usePostStore = defineStore('postStore', {
         const userId = auth.currentUser ? auth.currentUser.uid : null
         const userName = auth.currentUser ? auth.currentUser.displayName : 'Anonymous'
 
-        console.log('uid', userId)
+        const profileImage = postData.profileImage || this.defaultProfileImage
+        const backgroundImage = postData.backgroundImage || this.defaultBackgroundImage
+
         const docRef = await addDoc(postsCollection, {
-          profileImage: postData.profileImage || '',
+          profileImage: profileImage,
+          backgroundImage: backgroundImage,
           name: userName || '',
           timestamp: Timestamp.now(),
           content: postData.content || '',
@@ -44,7 +49,7 @@ export const usePostStore = defineStore('postStore', {
           userId: userId
         })
         console.log('Post created with ID:', docRef.id)
-        await this.fetchPostsByCurrentUser() // รีเฟรชโพสต์หลังจากสร้างโพสต์ใหม่
+        await this.fetchPostsByCurrentUser()
       } catch (error) {
         console.error('Error creating post:', error)
       }
