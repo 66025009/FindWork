@@ -20,9 +20,11 @@ import AdminPeopleView from '@/views/admin/AdminPeopleView.vue'
 import AdminFormView from '@/views/admin/AdminFormView.vue'
 import AccountUserView from '@/views/admin/user/AccountUserView.vue'
 import InformationView from '@/views/admin/user/InformationView.vue'
+import NotificationAdView from '@/views/admin/user/Notification-adView.vue'
 import CommunityView from '@/views/admin/user/CommunityView.vue'
 
 import { useAccountStore } from '@/stores/account'
+
 
 
 
@@ -131,6 +133,12 @@ const router = createRouter({
       path: '/admin/information',
       name: 'admin-information',
       component: InformationView,
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/admin/notification',
+      name: 'admin-notification',
+      component: NotificationAdView,
       meta: { requiresAdmin: true }
     },
     {

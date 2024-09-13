@@ -72,7 +72,7 @@ const saveData = async () => {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-lightgray">
     <div class="relative bg-white rounded-2xl p-8 m-4 shadow-lg max-w-md w-full">
-      <RouterLink :to="{ name: 'login'}" class="absolute top-2 right-2 text-gray-500 hover:text-red-400">
+      <RouterLink :to="{ name: 'home'}" class="absolute top-2 right-2 text-gray-500 hover:text-red-400">
         <span class="material-symbols-outlined">close</span>
       </RouterLink>
       <p class="text-base space-x-2 text-center">

@@ -2,21 +2,25 @@
 import { ref, onMounted, computed } from 'vue'
 import { getAuth } from 'firebase/auth'
 import { db, storage } from '@/firebase'
-import { collection, addDoc, Timestamp } from 'firebase/firestore'
+import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { useAccountStore } from '@/stores/account'
 import { useUserStore } from '@/stores/user/user'
 import UserLayout from '@/layouts/UserLayout2.vue'
 import PostCardHome from '@/components/PostCardHome.vue'
 
+// Stores and Firebase
 const accountStore = useAccountStore()
 const userStore = useUserStore()
 const auth = getAuth()
 
+// State
 const showPost = ref(false)
 const showImageUpload = ref(false)
 const imagePreview = ref(null)
 const isVideo = ref(false)
+const news = ref([])
+const expandedNewsId = ref(null) 
 
 const postData = ref({
   content: '',
@@ -24,11 +28,13 @@ const postData = ref({
   videoUrl: ''
 })
 
+// Computed
 const userData = computed(() => ({
   profileImage: userStore.currentUser?.profileImage || '/profileImage.jpg',
   backgroundImage: userStore.currentUser?.backgroundImage || '/backgroundImage.jpg'
 }))
 
+// Methods
 const handleFile = async (event) => {
   const file = event.target.files[0]
   if (file) {
@@ -72,13 +78,11 @@ const submitPost = async () => {
   }
 
   try {
-    // ตรวจสอบว่า userStore.currentUser มีข้อมูล uid หรือไม่
     if (!userStore.currentUser || !userStore.currentUser.uid) {
       console.error('User is not authenticated or UID is missing.')
       return
     }
 
-    // สร้างเอกสารโพสต์ใหม่ใน Firestore พร้อม uid
     await addDoc(collection(db, 'posts'), {
       profileImage: userStore.currentUser.profileImage,
       name: userStore.currentUser.name,
@@ -89,7 +93,6 @@ const submitPost = async () => {
       uid: userStore.currentUser.uid,  // เพิ่ม uid ของผู้ใช้
     })
 
-    // เคลียร์ข้อมูลหลังจากโพสต์สำเร็จ
     postData.value = { content: '', imageUrl: '', videoUrl: '' }
     imagePreview.value = null
     showPost.value = false
@@ -98,13 +101,33 @@ const submitPost = async () => {
   }
 }
 
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return ''
+  const date = timestamp.toDate()
+  return date.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
+}
 
-const removeImagePreview = () => {
-  imagePreview.value = null
-  isVideo.value = false
+// Fetch news
+const fetchNews = async () => {
+  const newsRef = collection(db, 'news')
+  const newsSnap = await getDocs(newsRef)
+  return newsSnap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  }))
+}
+
+const toggleShowMore = (id) => {
+  expandedNewsId.value = expandedNewsId.value === id ? null : id
 }
 
 onMounted(async () => {
+  try {
+    news.value = await fetchNews()
+  } catch (error) {
+    console.error('Error fetching news:', error)
+  }
+
   try {
     const user = auth.currentUser
     if (user) {
@@ -118,8 +141,12 @@ onMounted(async () => {
   }
 })
 
-const hasEducation = computed(() => userStore.currentUser && userStore.currentUser.university)
+const removeImagePreview = () => {
+  imagePreview.value = null
+  isVideo.value = false
+}
 
+const hasEducation = computed(() => userStore.currentUser && userStore.currentUser.university)
 </script>
 
 <template>
@@ -206,17 +233,28 @@ const hasEducation = computed(() => userStore.currentUser && userStore.currentUs
 
       <!-- ส่วนที่ 3 -->
       <div class="bg-white w-1/5 h-full rounded-2xl mt-4 sticky top-4">
-        <div class="flex flex-col bg-white h-full rounded-2xl">
-          <div class="mt-8 ml-4">
-            <h1 class="font-bold text-l">ข่าวสาร</h1>
-            <p>เรื่องราวยอดนิยม</p>
-          </div>
-          <div class="divider px-4"></div>
-          <div class="flex flex-col items-start mb-8 mx-4">
-            ข่าวสาร
-          </div>
-        </div>
+  <div class="flex flex-col bg-white h-full rounded-2xl overflow-hidden">
+    <div class="mt-8 ml-4">
+      <h1 class="font-bold text-lg">ข่าวสาร</h1>
+      <p>เรื่องราวยอดนิยม</p>
+    </div>
+    <div class="divider px-4"></div>
+    <div class="flex flex-col items-start mb-8 mx-4 overflow-auto">
+      <div v-for="item in news" :key="item.id" class="mb-4">
+        <h2 class="font-bold text-lg">{{ item.title }}</h2>
+        <p :class="['text-sm', { 'line-clamp-2': !expandedNewsId || expandedNewsId !== item.id }]">
+          {{ item.content }}
+        </p>
+        <p v-if="item.content.length > 100" @click="toggleShowMore(item.id)" class="text-blue-500 cursor-pointer">
+          {{ expandedNewsId === item.id ? 'แสดงน้อยลง' : 'แสดงเพิ่มเติม' }}
+        </p>
+        <p class="text-xs text-gray-500">{{ formatTimestamp(item.postTime) }}</p>
       </div>
+    </div>
+  </div>
+</div>
+
+
     </div>
 
     <!-- โหมดสร้างโพสต์ -->
@@ -268,3 +306,12 @@ const hasEducation = computed(() => userStore.currentUser && userStore.currentUs
     </div>
   </UserLayout>
 </template>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

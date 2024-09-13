@@ -181,7 +181,36 @@ export const useAccountStore = defineStore('account', {
                 }
             }
         },
-
+        async createEmailAndPassword(email, password) {
+            try {
+              // สร้างผู้ใช้ใหม่ด้วยอีเมลและรหัสผ่าน
+              const result = await createUserWithEmailAndPassword(auth, email, password);
+              const user = result.user;
+      
+              // ตั้งค่าโปรไฟล์เริ่มต้น
+              const defaultProfile = {
+                uid: user.uid,
+                email: user.email,
+                name: '',
+                companyName: '',
+                university: '',
+                createdAt: serverTimestamp()
+              };
+      
+              // บันทึกโปรไฟล์ลงใน Firestore
+              await setDoc(doc(db, 'user', user.uid), defaultProfile);
+      
+              // อัปเดตข้อมูลผู้ใช้ใน state
+              this.user = user;
+              this.isLoggerIn = true;
+      
+              console.log('User created and profile saved successfully:', defaultProfile);
+            } catch (error) {
+              console.error('Error creating user:', error);
+              throw new Error('Failed to create user: ' + error.message);
+            }
+          },
+          
         async createAdminAccount(email, password, name, job, profileImageUrl = '') {
             try {
                 // สร้างผู้ใช้ใหม่ด้วยอีเมลและรหัสผ่าน

@@ -39,5 +39,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     
+    match /news/{newsId} {
+      allow read: if true; // อนุญาตให้ทุกคนอ่านข่าว
+      allow create: if request.auth != null; // อนุญาตให้ผู้ใช้ที่เข้าสู่ระบบสร้างข่าว
+      allow update, delete: if isAdmin(); // อนุญาตให้เฉพาะแอดมินแก้ไขหรือลบข่าว
+    }
+
+    match /noti/{notiId} {
+      allow read: if true; // อนุญาตให้ทุกคนอ่านการแจ้งเตือน
+      allow create: if request.auth != null; // อนุญาตให้ผู้ใช้ที่เข้าสู่ระบบสร้างการแจ้งเตือน
+      allow update, delete: if isAdmin(); // อนุญาตให้เฉพาะแอดมินแก้ไขหรือลบการแจ้งเตือน
+    }
   }
 }
