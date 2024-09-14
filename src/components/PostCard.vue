@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { usePostStore } from '@/stores/user/post'
 import { useUserStore } from '@/stores/user/user'
 
@@ -7,9 +7,9 @@ const userStore = useUserStore()
 const postStore = usePostStore()
 const posts = ref([])
 
-const likedPosts = ref(new Set()) 
-const repostedPosts = ref(new Set()) 
-const commentStates = ref(new Map()) 
+const likedPosts = ref(new Set())
+const repostedPosts = ref(new Set())
+const commentStates = ref(new Map())
 const newComment = ref('')
 
 // ฟังก์ชันสำหรับคำนวณเวลาที่โพสต์
@@ -49,58 +49,82 @@ const timeAgo = (timestamp) => {
   }
 }
 
-const toggleLike = (postId) => {
-  if (likedPosts.value.has(postId)) {
-    likedPosts.value.delete(postId)
-  } else {
-    likedPosts.value.add(postId)
+const toggleLike = async (postId) => {
+  try {
+    if (likedPosts.value.has(postId)) {
+      likedPosts.value.delete(postId)
+    } else {
+      likedPosts.value.add(postId)
+    }
+
+    await postStore.likePost(postId)
+    saveStatusToStorage()
+  } catch (error) {
+    console.error('Error toggling like:', error)
   }
-  saveStatusToStorage()
 }
 
-const toggleRepost = (postId) => {
-  if (repostedPosts.value.has(postId)) {
-    repostedPosts.value.delete(postId)
-  } else {
-    repostedPosts.value.add(postId)
+const toggleRepost = async (postId) => {
+  const post = posts.value.find(p => p.id === postId);
+  if (!post) {
+    console.error('Post not found:', postId);
+    return;
   }
-  saveStatusToStorage()
+
+  const userId = userStore.currentUser?.uid;
+  if (!userId) {
+    console.error('User not logged in or userId is missing');
+    return;
+  }
+
+  try {
+    if (repostedPosts.value.has(postId)) {
+      repostedPosts.value.delete(postId);
+      await postStore.removeRepost(postId, userId);
+    } else {
+      repostedPosts.value.add(postId);
+      await postStore.addRepost(post, userId);
+    }
+    saveStatusToStorage();
+  } catch (error) {
+    console.error('Error toggling repost:', error)
+  }
 }
+
 
 const addComment = async (postId) => {
   if (newComment.value.trim()) {
     try {
-      await postStore.createComment(postId, { content: newComment.value });
-      newComment.value = '';
-      await postStore.fetchComments(postId);
+      await postStore.createComment(postId, { content: newComment.value })
+      newComment.value = ''
+      await postStore.fetchComments(postId)
     } catch (error) {
-      console.error('Error adding comment:', error);
+      console.error('Error adding comment:', error)
     }
   }
 }
 
 const convertToTimestamp = (timestamp) => {
-  if (timestamp instanceof Date) {
-    return timestamp.getTime()
-  } else if (timestamp.seconds !== undefined && timestamp.nanoseconds !== undefined) {
-    return timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000
-  } else if (timestamp.toDate) {
-    return timestamp.toDate().getTime()
-  } else {
-    console.error('Invalid timestamp:', timestamp)
-    return 0
-  }
+  return new Date(timestamp).getTime()
 }
 
 const loadStatusFromStorage = () => {
-  const liked = localStorage.getItem('likedPosts')
-  const reposted = localStorage.getItem('repostedPosts')
-  if (liked) {
-    likedPosts.value = new Set(JSON.parse(liked))
-  }
-  if (reposted) {
-    repostedPosts.value = new Set(JSON.parse(reposted))
-  }
+  const userId = userStore.currentUser?.uid;
+  if (!userId) return;
+
+  const savedLikes = JSON.parse(localStorage.getItem(`likedPosts_${userId}`)) || []
+  savedLikes.forEach(postId => likedPosts.value.add(postId))
+
+  const savedReposts = JSON.parse(localStorage.getItem(`repostedPosts_${userId}`)) || []
+  savedReposts.forEach(postId => repostedPosts.value.add(postId))
+}
+
+const saveStatusToStorage = () => {
+  const userId = userStore.currentUser?.uid;
+  if (!userId) return;
+
+  localStorage.setItem(`likedPosts_${userId}`, JSON.stringify(Array.from(likedPosts.value)))
+  localStorage.setItem(`repostedPosts_${userId}`, JSON.stringify(Array.from(repostedPosts.value)))
 }
 
 const filterPostsByUid = (posts) => {
@@ -108,17 +132,14 @@ const filterPostsByUid = (posts) => {
 }
 
 onMounted(async () => {
-  loadStatusFromStorage();
-  await postStore.fetchPostsByCurrentUser(userStore.currentUser?.id); // ส่ง userId เพื่อกรองโพสต์
+  await postStore.fetchPostsByCurrentUser(userStore.currentUser?.id)
   posts.value = postStore.posts
     .slice()
-    .sort((a, b) => convertToTimestamp(b.postTime) - convertToTimestamp(a.postTime));
-  
-  await postStore.updateOldPostsField(); // เรียกใช้ฟังก์ชัน updateOldPostsField
+    .sort((a, b) => convertToTimestamp(b.postTime) - convertToTimestamp(a.postTime))
 
-  // console.log('โพสต์ทั้งหมดของผู้ใช้:', posts.value);
-});
-
+  loadStatusFromStorage()
+  await postStore.updateOldPostsField()
+})
 
 watch(() => postStore.posts, (newPosts) => {
   posts.value = filterPostsByUid(newPosts)
@@ -141,15 +162,7 @@ const toggleComments = (postId) => {
     commentStates.value.set(postId, true)
   }
 }
-
-const saveStatusToStorage = () => {
-  localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts.value)))
-  localStorage.setItem('repostedPosts', JSON.stringify(Array.from(repostedPosts.value)))
-}
-
 </script>
-
-
 
 <template>
   <div>
@@ -162,7 +175,9 @@ const saveStatusToStorage = () => {
           </div>
           <div>
             <div class="text-center">
-              <h1 class="text-s font-bold text-left">{{ post.name || 'Unknown User' }}</h1>
+              <h1 class="text-s font-bold text-left">{{ post.name || 'Unknown User' }}
+                <span> {{ post.emoji }}</span>
+              </h1>
             </div>
             <div class="text-sm text-gray-500">{{ timeAgo(post.postTime) }}</div>
           </div>
@@ -208,7 +223,7 @@ const saveStatusToStorage = () => {
             </button>
           </div>
           <div>
-            <span>สถานะโพสต์</span>
+            <span class="ml-2">คนกดถูกใจ : {{ post.likeCount || 0 }} คน</span>
           </div>
         </div>
 
@@ -218,16 +233,16 @@ const saveStatusToStorage = () => {
 
             <!-- ส่วนของความคิดเห็น -->
             <div v-for="comment in postStore.comments.get(post.id) || []" :key="comment.id" class="flex items-center space-x-4 mb-2">
-                <div class="w-12 h-12 rounded-full overflow-hidden">
-                  <img :src="comment.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
-                </div>
-                <div class="flex-1 p-2 bg-gray-200 rounded-md">
-                  <div class="text-left">
-                    <h1 class="text-s font-bold text-left">{{ comment.name || 'Unknown User' }}</h1>
-                  </div>
-                  <p class="text-sm">{{ comment.content }}</p>
-                </div>
+              <div class="w-12 h-12 rounded-full overflow-hidden">
+                <img :src="comment.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
               </div>
+              <div class="flex-1 p-2 bg-gray-200 rounded-md">
+                <div class="text-left">
+                  <h1 class="text-s font-bold text-left">{{ comment.name || 'Unknown User' }}</h1>
+                </div>
+                <p class="text-sm">{{ comment.content }}</p>
+              </div>
+            </div>
 
             <!-- แบบฟอร์มเพิ่มความคิดเห็น -->
             <div class="flex items-center space-x-4">

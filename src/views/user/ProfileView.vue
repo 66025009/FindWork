@@ -2,10 +2,10 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-
 import { useUserStore } from '@/stores/user/user' 
 import { useAccountStore } from '@/stores/account'
 import PostCard from '@/components/PostCard.vue'
+import RePost from '@/components/RePost.vue'
 
 import UserLayout from '@/layouts/UserLayout2.vue'
 
@@ -49,6 +49,7 @@ const userData = computed(() => {
                     <div class="divider px-4 mt-4"></div>
                     <div class="flex flex-col space-y-4 w-full h-full"> 
 
+                        <RePost></RePost>
                         <PostCard></PostCard>
                         
                     </div>

@@ -11,7 +11,8 @@ import {
   Timestamp, 
   query, 
   where, 
-  setDoc
+  setDoc, 
+  onSnapshot
 } from 'firebase/firestore'
 import { ref as storageRef, getDownloadURL, getStorage } from 'firebase/storage'
 import { getAuth } from 'firebase/auth'
@@ -26,6 +27,7 @@ export const usePostStore = defineStore('postStore', {
     otherPosts: [],
     defaultProfileImage: '/profileImage.jpg', // กำหนดรูปเริ่มต้น
     defaultBackgroundImage: '/path/to/default-background.jpg', // กำหนดรูปพื้นหลังเริ่มต้น
+    likes: new Map(), // เก็บข้อมูลไลค์ในรูปแบบของโพสต์ ID กับการไลค์ของผู้ใช้
   }),
   actions: {
     async createPost(postData) {
@@ -348,7 +350,131 @@ export const usePostStore = defineStore('postStore', {
       } catch (error) {
         console.error('Error updating old posts and comments:', error);
       }
-    }
+    },
+
+    async addRepost(post, userId) {
+      try {
+        if (!post || typeof post.id !== 'string' || typeof userId !== 'string') {
+          throw new Error('Invalid post or userId');
+        }
     
+        const repostRef = doc(db, 'reposts', userId, 'userReposts', post.id);
+        await setDoc(repostRef, {
+          postId: post.id,
+          userId: userId,
+          postContent: post.content || '',
+          postImageUrl: post.imageUrl || '',
+          postVideoUrl: post.videoUrl || '',
+          postTime: post.postTime || Timestamp.now(),
+          profileImage: post.profileImage || '',
+          name: post.name || '',
+          emoji: post.emoji || '',
+        });
+        console.log('Repost added successfully');
+      } catch (error) {
+        console.error('Error adding repost:', error);
+      }
+    },
+    
+    async removeRepost(postId, userId) {
+      try {
+        if (typeof postId !== 'string' || typeof userId !== 'string') {
+          throw new Error('Invalid postId or userId');
+        }
+    
+        const repostRef = doc(db, 'reposts', userId, 'userReposts', postId);
+        await deleteDoc(repostRef);
+        console.log('Repost removed successfully');
+      } catch (error) {
+        console.error('Error removing repost:', error);
+      }
+    },
+
+    async likePost(postId) {
+      try {
+        const auth = getAuth();
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+    
+        if (!userId) {
+          console.warn('User not logged in or userId is not available');
+          return;
+        }
+    
+        const postRef = doc(db, 'posts', postId);
+        const postDoc = await getDoc(postRef);
+    
+        if (postDoc.exists()) {
+          const postData = postDoc.data();
+          const likes = postData.likes || {};
+    
+          // Toggle the user's like status
+          if (likes[userId]) {
+            // If the user has already liked the post, remove the like
+            delete likes[userId];
+          } else {
+            // Otherwise, add the like
+            likes[userId] = true;
+          }
+    
+          // Update the post document with the new likes object
+          await updateDoc(postRef, { 
+            likes,
+            likeCount: Object.keys(likes).length // Update the like count
+          });
+    
+          // Fetch the updated number of likes
+          await this.fetchLikes(postId);
+        } else {
+          console.warn('Post does not exist:', postId);
+        }
+      } catch (error) {
+        console.error('Error liking post:', error);
+      }
+    },
+    
+    async fetchLikes(postId) {
+      try {
+        const postRef = doc(db, 'posts', postId);
+        const postDoc = await getDoc(postRef);
+    
+        if (postDoc.exists()) {
+          const postData = postDoc.data();
+          const likeCount = postData.likeCount || 0;
+    
+          // Update the likes map in the state
+          this.likes.set(postId, likeCount);
+        } else {
+          console.warn('Post does not exist:', postId);
+          this.likes.set(postId, 0);
+        }
+      } catch (error) {
+        console.error('Error fetching likes:', error);
+      }
+    },
+    
+    async fetchRepostedPosts(userId, callback) {
+      if (!userId) return;
+
+      try {
+        const repostsRef = collection(db, 'reposts', userId, 'userReposts')
+        const q = query(repostsRef)
+
+        // Set up a real-time listener
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const reposts = []
+          querySnapshot.forEach(doc => {
+            reposts.push({ id: doc.id, ...doc.data() })
+          })
+
+          console.log('Real-time updated reposted posts:', reposts) // Check real-time results
+          callback(reposts) // Update the local state
+        })
+
+        // Return the unsubscribe function to stop listening when the component is unmounted
+        return unsubscribe
+      } catch (error) {
+        console.error('Error fetching reposted posts:', error)
+      }
+    },
   }
 })

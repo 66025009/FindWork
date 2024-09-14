@@ -56,22 +56,48 @@ const timeAgo = (timestamp) => {
   }
 }
 
-const toggleLike = (postId) => {
-  if (likedPosts.value.has(postId)) {
-    likedPosts.value.delete(postId)
-  } else {
-    likedPosts.value.add(postId)
+const toggleLike = async (postId) => {
+  try {
+    if (likedPosts.value.has(postId)) {
+      likedPosts.value.delete(postId)
+    } else {
+      likedPosts.value.add(postId)
+    }
+
+    await postStore.likePost(postId) // ใช้ฟังก์ชัน likePost แทน addLike และ removeLike
+    saveStatusToStorage()
+  } catch (error) {
+    console.error('Error toggling like:', error)
   }
-  saveStatusToStorage()
 }
 
-const toggleRepost = (postId) => {
-  if (repostedPosts.value.has(postId)) {
-    repostedPosts.value.delete(postId)
-  } else {
-    repostedPosts.value.add(postId)
+const toggleRepost = async (postId) => {
+  const post = posts.value.find(p => p.id === postId);
+  if (!post) {
+    console.error('Post not found:', postId);
+    return;
   }
-  saveStatusToStorage()
+
+  const userId = userStore.currentUser?.uid;
+  if (!userId) {
+    console.error('User not logged in or userId is missing');
+    return;
+  }
+
+  try {
+    if (repostedPosts.value.has(postId)) {
+      // Remove repost
+      repostedPosts.value.delete(postId);
+      await postStore.removeRepost(postId, userId); // Use store method
+    } else {
+      // Add repost
+      repostedPosts.value.add(postId);
+      await postStore.addRepost(post, userId); // Use store method
+    }
+    saveStatusToStorage();
+  } catch (error) {
+    console.error('Error toggling repost:', error);
+  }
 }
 
 const addComment = async (postId) => {
@@ -110,6 +136,11 @@ const loadStatusFromStorage = () => {
   }
 }
 
+const saveStatusToStorage = () => {
+  localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts.value)))
+  localStorage.setItem('repostedPosts', JSON.stringify(Array.from(repostedPosts.value)))
+}
+
 onMounted(async () => {
   loadStatusFromStorage();
   await postStore.fetchPostsExcludingCurrentUser();
@@ -120,11 +151,7 @@ onMounted(async () => {
   posts.value = postStore.otherPosts
     .slice()
     .sort((a, b) => convertToTimestamp(b.postTime) - convertToTimestamp(a.postTime));
-
-   // console.log('โพสต์ของคนอื่น:', posts.value);
 });
-
-
 
 watch(() => postStore.otherPosts, (newPosts) => {
   posts.value = newPosts
@@ -147,110 +174,105 @@ const toggleComments = (postId) => {
     commentStates.value.set(postId, true)
   }
 }
-
-const saveStatusToStorage = () => {
-  localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts.value)))
-  localStorage.setItem('repostedPosts', JSON.stringify(Array.from(repostedPosts.value)))
-}
 </script>
 
-
 <template>
-    <div>
-      <div v-for="post in posts" :key="post.id" class="card w-full bg-base-100 shadow-xl mb-4">
-        <div class="card-body">
-          <!-- Profile Section -->
-          <div class="flex items-center space-x-4">
-            <div class="w-16 h-16 rounded-full overflow-hidden">
-              <img :src="post.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
-            </div>
-            <div>
-              <div class="text-center">
-                <h1 class="text-s font-bold text-left">{{ post.name || 'Unknown User' }}</h1>
-              </div>
-              <div class="text-sm text-gray-500">{{ timeAgo(post.postTime) }}</div>
-            </div>
+  <div>
+    <div v-for="post in posts" :key="post.id" class="card w-full bg-base-100 shadow-xl mb-4">
+      <div class="card-body">
+        <!-- Profile Section -->
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 rounded-full overflow-hidden">
+            <img :src="post.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
           </div>
-  
-          <!-- Post Content -->
-          <p class="mt-4">
-            {{ post.content || 'เนื้อหาโพสต์ไม่ระบุ' }}
-          </p>
-  
-          <div v-if="post.imageUrl" class="mt-4">
-            <img :src="post.imageUrl" alt="Post Image" class="w-full h-auto">
-          </div>
-  
-          <div v-if="post.videoUrl" class="mt-4">
-            <video controls :src="post.videoUrl" class="w-full h-auto"></video>
-          </div>
-  
-          <div class="divider px-4"></div>
-  
-          <!-- Interaction Section -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <button 
-                @click="toggleLike(post.id)"
-                :class="{'btn btn-ghost flex items-center btn-blue': likedPosts.has(post.id), 'btn btn-ghost flex items-center': !likedPosts.has(post.id)}"
-              >
-                <span class="material-symbols-outlined">thumb_up</span>
-                <span class="font-bold text-left ml-2">ถูกใจ</span>
-              </button>
-  
-              <button 
-                @click="toggleRepost(post.id)"
-                :class="{'btn btn-ghost flex items-center btn-green': repostedPosts.has(post.id), 'btn btn-ghost flex items-center': !repostedPosts.has(post.id)}"
-              >
-                <span class="material-symbols-outlined">repeat</span>
-                <span class="font-bold text-left ml-2">รีโพสต์</span>
-              </button>
-  
-              <button @click="toggleComments(post.id)" class="btn btn-ghost flex items-center">
-                <span class="material-symbols-outlined">chat</span>
-                <span class="font-bold text-left ml-2">คอมเมนต์</span>
-              </button>
+          <div>
+            <div class="text-center">
+              <h1 class="text-s font-bold text-left">{{ post.name || 'Unknown User' }}
+                <span> {{ post.emoji }}</span>
+              </h1>
             </div>
-            <div>
-              <span>สถานะโพสต์</span>
-            </div>
+            <div class="text-sm text-gray-500">{{ timeAgo(post.postTime) }}</div>
           </div>
-  
-          <transition name="fade">
-            <div v-if="commentStates.get(post.id)" class="mt-4 bg-gray-100 h-full p-4 rounded-md">
-              <p class="font-bold">ความคิดเห็น</p>
-  
-              <!-- ส่วนของความคิดเห็น -->
-              <div v-for="comment in postStore.comments.get(post.id) || []" :key="comment.id" class="flex items-center space-x-4 mb-2">
-                <div class="w-12 h-12 rounded-full overflow-hidden">
-                  <img :src="comment.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
-                </div>
-                <div class="flex-1 p-2 bg-gray-200 rounded-md">
-                  <div class="text-left">
-                    <h1 class="text-s font-bold text-left">{{ comment.name || 'Unknown User' }}</h1>
-                  </div>
-                  <p class="text-sm">{{ comment.content }}</p>
-                </div>
-              </div>
-  
-              <!-- แบบฟอร์มเพิ่มความคิดเห็น -->
-              <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-full overflow-hidden">
-                  <img :src="userData.profileImage" alt="Avatar" class="w-full h-full object-cover" />
-                </div>
-                <div class="flex items-center w-full bg-gray-200 p-2 rounded-md">
-                  <input v-model="newComment" placeholder="เขียนความคิดเห็น..." class="flex-1 bg-gray-200 p-2 rounded-md">
-                  <button @click="addComment(post.id)" class="material-symbols-outlined">send</button>
-                </div>
-              </div>
-            </div>
-          </transition>
-          
         </div>
+
+        <!-- Post Content -->
+        <p class="mt-4">
+          {{ post.content || 'เนื้อหาโพสต์ไม่ระบุ' }}
+        </p>
+
+        <div v-if="post.imageUrl" class="mt-4">
+          <img :src="post.imageUrl" alt="Post Image" class="w-full h-auto">
+        </div>
+
+        <div v-if="post.videoUrl" class="mt-4">
+          <video controls :src="post.videoUrl" class="w-full h-auto"></video>
+        </div>
+
+        <div class="divider px-4"></div>
+
+        <!-- Interaction Section -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="toggleLike(post.id)"
+              :class="{'btn btn-ghost flex items-center btn-blue': likedPosts.has(post.id), 'btn btn-ghost flex items-center': !likedPosts.has(post.id)}"
+            >
+              <span class="material-symbols-outlined">thumb_up</span>
+              <span class="font-bold text-left ml-2">ถูกใจ</span>
+            </button>
+
+            <button 
+              @click="toggleRepost(post.id)"
+              :class="{'btn btn-ghost flex items-center btn-green': repostedPosts.has(post.id), 'btn btn-ghost flex items-center': !repostedPosts.has(post.id)}"
+            >
+              <span class="material-symbols-outlined">repeat</span>
+              <span class="font-bold text-left ml-2">รีโพสต์</span>
+            </button>
+
+            <button @click="toggleComments(post.id)" class="btn btn-ghost flex items-center">
+              <span class="material-symbols-outlined">chat</span>
+              <span class="font-bold text-left ml-2">คอมเมนต์</span>
+            </button>
+          </div>
+          <div>
+            <span class="ml-2">คนกดถูกใจ : {{ post.likeCount || 0 }} คน</span>
+          </div>
+        </div>
+
+        <transition name="fade">
+          <div v-if="commentStates.get(post.id)" class="mt-4 bg-gray-100 h-full p-4 rounded-md">
+            <p class="font-bold">ความคิดเห็น</p>
+
+            <!-- ส่วนของความคิดเห็น -->
+            <div v-for="comment in postStore.comments.get(post.id) || []" :key="comment.id" class="flex items-center space-x-4 mb-2">
+              <div class="w-12 h-12 rounded-full overflow-hidden">
+                <img :src="comment.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
+              </div>
+              <div class="flex-1 p-2 bg-gray-200 rounded-md">
+                <div class="text-left">
+                  <h1 class="text-s font-bold text-left">{{ comment.name || 'Unknown User' }}</h1>
+                </div>
+                <p class="text-sm">{{ comment.content }}</p>
+              </div>
+            </div>
+
+            <!-- แบบฟอร์มเพิ่มความคิดเห็น -->
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 rounded-full overflow-hidden">
+                <img :src="userData.profileImage" alt="Avatar" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex items-center w-full bg-gray-200 p-2 rounded-md">
+                <input v-model="newComment" placeholder="เขียนความคิดเห็น..." class="flex-1 bg-gray-200 p-2 rounded-md">
+                <button @click="addComment(post.id)" class="material-symbols-outlined">send</button>
+              </div>
+            </div>
+          </div>
+        </transition>
+        
       </div>
     </div>
-  </template>
-  
+  </div>
+</template>
 
 <style scoped>
 .btn-blue {

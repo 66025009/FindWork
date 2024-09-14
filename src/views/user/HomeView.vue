@@ -6,35 +6,35 @@ import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { useAccountStore } from '@/stores/account'
 import { useUserStore } from '@/stores/user/user'
+import { useEmojiStore } from '@/stores/user/emoji'
 import UserLayout from '@/layouts/UserLayout2.vue'
 import PostCardHome from '@/components/PostCardHome.vue'
 
-// Stores and Firebase
 const accountStore = useAccountStore()
 const userStore = useUserStore()
+const emojiStore = useEmojiStore()
 const auth = getAuth()
 
-// State
 const showPost = ref(false)
 const showImageUpload = ref(false)
 const imagePreview = ref(null)
 const isVideo = ref(false)
 const news = ref([])
 const expandedNewsId = ref(null) 
+const showEmojiDropdown = ref(false)
 
 const postData = ref({
   content: '',
   imageUrl: '',
-  videoUrl: ''
+  videoUrl: '',
+  emoji: ''
 })
 
-// Computed
 const userData = computed(() => ({
   profileImage: userStore.currentUser?.profileImage || '/profileImage.jpg',
   backgroundImage: userStore.currentUser?.backgroundImage || '/backgroundImage.jpg'
 }))
 
-// Methods
 const handleFile = async (event) => {
   const file = event.target.files[0]
   if (file) {
@@ -90,10 +90,11 @@ const submitPost = async () => {
       content: postData.value.content,
       imageUrl: postData.value.imageUrl,
       videoUrl: postData.value.videoUrl,
-      uid: userStore.currentUser.uid,  // เพิ่ม uid ของผู้ใช้
+      emoji: postData.value.emoji,
+      uid: userStore.currentUser.uid, 
     })
 
-    postData.value = { content: '', imageUrl: '', videoUrl: '' }
+    postData.value = { content: '', imageUrl: '', videoUrl: '', emoji: '' }
     imagePreview.value = null
     showPost.value = false
   } catch (error) {
@@ -107,7 +108,6 @@ const formatTimestamp = (timestamp) => {
   return date.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
 }
 
-// Fetch news
 const fetchNews = async () => {
   const newsRef = collection(db, 'news')
   const newsSnap = await getDocs(newsRef)
@@ -147,6 +147,19 @@ const removeImagePreview = () => {
 }
 
 const hasEducation = computed(() => userStore.currentUser && userStore.currentUser.university)
+
+const toggleEmojiDropdown = () => {
+  showEmojiDropdown.value = !showEmojiDropdown.value
+}
+
+const selectEmoji = (emoji) => {
+  const Emoji = `${emoji}`;
+  postData.value.emoji = Emoji;
+  showEmojiDropdown.value = false;
+}
+
+
+
 </script>
 
 <template>
@@ -198,8 +211,8 @@ const hasEducation = computed(() => userStore.currentUser && userStore.currentUs
         </div>
       </div>
 
-      <!-- ส่วนที่ 2 -->
-      <div class="flex flex-col space-y-4 w-2/4 h-full">
+     <!-- ส่วนที่ 2 -->
+     <div class="flex flex-col space-y-4 w-2/4 h-full">
         <div class="bg-white h-full rounded-2xl mt-4">
           <div class="flex justify-center items-center w-full bg-white rounded-2xl space-x-4 pt-6">
             <div class="w-16 h-16 rounded-full border-4 border-lightgray overflow-hidden">
@@ -233,43 +246,45 @@ const hasEducation = computed(() => userStore.currentUser && userStore.currentUs
 
       <!-- ส่วนที่ 3 -->
       <div class="bg-white w-1/5 h-full rounded-2xl mt-4 sticky top-4">
-  <div class="flex flex-col bg-white h-full rounded-2xl overflow-hidden">
-    <div class="mt-8 ml-4">
-      <h1 class="font-bold text-lg">ข่าวสาร</h1>
-      <p>เรื่องราวยอดนิยม</p>
-    </div>
-    <div class="divider px-4"></div>
-    <div class="flex flex-col items-start mb-8 mx-4 overflow-auto">
-      <div v-for="item in news" :key="item.id" class="mb-4">
-        <h2 class="font-bold text-lg">{{ item.title }}</h2>
-        <p :class="['text-sm', { 'line-clamp-2': !expandedNewsId || expandedNewsId !== item.id }]">
-          {{ item.content }}
-        </p>
-        <p v-if="item.content.length > 100" @click="toggleShowMore(item.id)" class="text-blue-500 cursor-pointer">
-          {{ expandedNewsId === item.id ? 'แสดงน้อยลง' : 'แสดงเพิ่มเติม' }}
-        </p>
-        <p class="text-xs text-gray-500">{{ formatTimestamp(item.postTime) }}</p>
+        <div class="flex flex-col bg-white h-full rounded-2xl overflow-hidden">
+          <div class="mt-8 ml-4">
+            <h1 class="font-bold text-lg">ข่าวสาร</h1>
+            <p>เรื่องราวยอดนิยม</p>
+          </div>
+          <div class="divider px-4"></div>
+          <div class="flex flex-col items-start mb-8 mx-4 overflow-auto">
+            <div v-for="item in news" :key="item.id" class="mb-4">
+              <h2 class="font-bold text-lg">{{ item.title }}</h2>
+              <p :class="['text-sm', { 'line-clamp-2': !expandedNewsId || expandedNewsId !== item.id }]">
+                {{ item.content }}
+              </p>
+              <p v-if="item.content.length > 100" @click="toggleShowMore(item.id)" class="text-blue-500 cursor-pointer">
+                {{ expandedNewsId === item.id ? 'แสดงน้อยลง' : 'แสดงเพิ่มเติม' }}
+              </p>
+              <p class="text-xs text-gray-500">{{ formatTimestamp(item.postTime) }}</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
-
-
     </div>
 
     <!-- โหมดสร้างโพสต์ -->
     <div v-if="showPost" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
       <div class="relative bg-white p-8 rounded-lg max-w-lg w-full">
-        <h1 class="text-lg font-bold mb-4">สร้างโพสต์</h1>
-        <form @submit.prevent="submitPost">
-          <div class="flex items-center space-x-4 mb-4">
-            <div class="w-16 h-16 rounded-full overflow-hidden">
-              <img :src="userData.profileImage" alt="Avatar" class="w-full h-full">
-            </div>
-            <div v-if="userStore.loaded && userStore.currentUser" class="text-center space-y-2">
-              <h1 class="text-l font-bold">{{ userStore.currentUser.name }}</h1>
-            </div>
-          </div>
+    <h1 class="text-lg font-bold mb-4">สร้างโพสต์</h1>
+    <form @submit.prevent="submitPost">
+      <div class="flex items-center space-x-4 mb-4">
+        <div class="w-16 h-16 rounded-full overflow-hidden">
+          <img :src="userData.profileImage" alt="Avatar" class="w-full h-full">
+        </div>
+        <div v-if="userStore.loaded && userStore.currentUser" class="text-center space-y-2">
+          <h1 class="text-l font-bold">
+  {{ userStore.currentUser.name }} 
+  <span v-html="postData.emoji.replace(userStore.currentUser.name, '')"></span>
+</h1>
+
+        </div>
+      </div>
 
           <div class="mb-4">
             <textarea v-model="postData.content" id="postContent" class="textarea textarea-bordered w-full" placeholder="เนื้อหา"></textarea>
@@ -296,6 +311,23 @@ const hasEducation = computed(() => userStore.currentUser && userStore.currentUs
             <button @click="showImageUpload = !showImageUpload" type="button" class="flex items-center space-x-2">
               <span class="material-symbols-outlined" style="color: #1A73E8; font-size: 40px;">imagesmode</span>
             </button>
+
+            <!-- ปุ่มแสดงอิโมจิ dropdown -->
+            <div class="relative">
+              <button @click="toggleEmojiDropdown" type="button" class="flex items-center space-x-2">
+                <span class="material-symbols-outlined" style="color: #F7C02B; font-size: 40px;">sentiment_satisfied</span>
+              </button>
+
+              <!-- Dropdown แสดงอิโมจิ -->
+              <div v-if="showEmojiDropdown" class="absolute bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 w-64 max-h-48 overflow-y-auto">
+                <div class="grid grid-cols-1 gap-3 p-2">
+                  <button v-for="emoji in emojiStore.getEmoji" :key="emoji" @click="selectEmoji(emoji)" class="text-2xl p-2 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none w-full text-left">
+                    {{ emoji }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <button type="submit" class="btn btn-primary">โพสต์</button>
           </div>
         </form>
