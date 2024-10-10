@@ -13,6 +13,10 @@ const fetchNotifications = async () => {
     const notiCollection = collection(db, 'noti')
     const notiSnapshot = await getDocs(notiCollection)
     notifications.value = notiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    
+    // เรียงลำดับ notifications โดยให้รายการใหม่อยู่ด้านบน
+    notifications.value.sort((a, b) => b.postTime.toDate() - a.postTime.toDate())
+
     console.log('Notifications fetched:', notifications.value) // เพิ่ม log เพื่อดูข้อมูลที่ดึงมา
   } catch (error) {
     console.error('Error fetching notifications:', error)

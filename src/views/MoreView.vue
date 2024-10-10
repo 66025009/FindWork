@@ -46,77 +46,77 @@ const toggleShowMore = () => {
                     <p class="text-xl font-bold"> ค้นหากลุ่มชุมชนคอมมูนิตี้ <br> ที่ใช่สำหรับคุณ </p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
-                    <button class="btn btn-outline"> Default </button>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> เทคโนโลยีสารสนเทศ </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> การศึกษาและวิจัย </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> แสดงผลงานและสร้างสรรค์ </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> บันเทิงและเกม </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> สังคมและวัฒนธรรม </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> อาสาสมัครการกุศล </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> นันทนาการ </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" class="btn btn-outline"> สุขภาพ </RouterLink>
                     
-                    <button 
+                    <button
                         v-if="!showMore"
                         class="btn btn-outline"
                         @click="toggleShowMore"
                     >
                         แสดงเพิ่มเติม
                     </button>
-                    <button 
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    การท่องเที่ยว
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    พัฒนาการทำงาน
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    การออกแบบ
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    นโยบายสาธารณะ
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    ความปลอดภัย
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    ศิลปะและวรรณกรรม
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    พัฒนาทักษะชีวิต
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                     >
-                        Default
-                    </button>
-                    <button 
+                    กฎหมาย
+                    </RouterLink>
+                    <RouterLink :to="{ name: 'login'}" 
                         v-if="showMore"
                         class="btn btn-outline"
                         @click="toggleShowMore"
                     >
                         แสดงน้อยลง
-                    </button>
+                    </RouterLink>
                 </div>
             </div>
         </section>
@@ -125,13 +125,13 @@ const toggleShowMore = () => {
             <div class="flex-col space-y-4 text-left mr-20">
                 <img src="/talk.png" alt="picture" class="w-auto h-auto ml-20">
                 <p class="text-xl font-bold"> ทำความรู้จักกับบุคคล <br> ที่สามารถช่วยคุณได้ </p>
-                <button class="btn btn-wide btn-lg"> ค้นหาบุคคลที่คุณรู้จัก </button>
+                <RouterLink :to="{ name: 'login'}" class="btn btn-wide btn-lg"> ค้นหาบุคคลที่คุณรู้จัก </RouterLink>
             </div>
             <div class="flex-col space-y-4 text-left mr-20">
                 <p class="text-xl font-bold"> FindWork มีไว้สำหรับ <br> บุคคลกลุ่มไหน </p>
                 <p class="text-xxl"> คนที่กำลังมองหาเส้นทาง <br>ชีวิตการทำงานของพวกเขา </p>
-                <button class="btn btn-outline btn-info "> ค้นหาเพื่อนร่วมงานหรือเพื่อนพูดคุย </button><br>
-                <button class="btn btn-outline btn-info "> ค้นหาไอเดียใหม่ๆ </button>
+                <RouterLink :to="{ name: 'login'}" class="btn btn-outline btn-info "> ค้นหาเพื่อนร่วมงานหรือเพื่อนพูดคุย </RouterLink><br>
+                <RouterLink :to="{ name: 'login'}" class="btn btn-outline btn-info "> ค้นหาไอเดียใหม่ๆ </RouterLink>
             </div>
         </section>
 

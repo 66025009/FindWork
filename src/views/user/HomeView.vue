@@ -9,6 +9,8 @@ import { useUserStore } from '@/stores/user/user'
 import { useEmojiStore } from '@/stores/user/emoji'
 import UserLayout from '@/layouts/UserLayout2.vue'
 import PostCardHome from '@/components/PostCardHome.vue'
+import EmojiPicker from 'vue3-emoji-picker';
+import 'vue3-emoji-picker/css'
 
 const accountStore = useAccountStore()
 const userStore = useUserStore()
@@ -153,11 +155,9 @@ const toggleEmojiDropdown = () => {
 }
 
 const selectEmoji = (emoji) => {
-  const Emoji = `${emoji}`;
-  postData.value.emoji = Emoji;
+  postData.value.emoji = emoji.i; // เก็บเฉพาะอิโมจิที่เลือก
   showEmojiDropdown.value = false;
 }
-
 
 
 </script>
@@ -226,16 +226,16 @@ const selectEmoji = (emoji) => {
           <div class="divider px-4"></div>
           <div class="flex flew-rows justify-center items-center space-x-12 pb-6">
             <button @click="showPost = true" class="flex flew-rows justify-center items-center space-x-2">
-              <span class="material-symbols-outlined" style="color: #1A73E8; font-size: 40px;">imagesmode</span>
-              <p>รูปภาพ</p>
+              <span class="material-symbols-outlined text-blue-400">image</span>
+              <h1 class="text-blue-400">รูปภาพ</h1>
             </button>
             <button @click="showPost = true" class="flex flew-rows justify-center items-center space-x-2">
-              <span class="material-symbols-outlined" style="color: #F27733; font-size: 40px;">smart_display</span>
-              <p>วิดีโอ</p>
+              <span class="material-symbols-outlined text-blue-400">video_camera_front</span>
+              <h1 class="text-blue-400">วิดีโอ</h1>
             </button>
             <button @click="showPost = true" class="flex flew-rows justify-center items-center space-x-2">
-              <span class="material-symbols-outlined" style="color: #F7C02B; font-size: 40px;">sentiment_satisfied</span>
-              <p>ความรู้สึก</p>
+              <span class="material-symbols-outlined text-blue-400">emoji_emotions</span>
+              <h1 class="text-blue-400">อีโมจิ</h1>
             </button>
           </div>
         </div>
@@ -268,29 +268,38 @@ const selectEmoji = (emoji) => {
       </div>
     </div>
 
-    <!-- โหมดสร้างโพสต์ -->
-    <div v-if="showPost" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div class="relative bg-white p-8 rounded-lg max-w-lg w-full">
-    <h1 class="text-lg font-bold mb-4">สร้างโพสต์</h1>
-    <form @submit.prevent="submitPost">
-      <div class="flex items-center space-x-4 mb-4">
+    <transition name="fade" appear>
+          <div v-if="showPost" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div class="bg-white rounded-2xl p-6 w-2/5">
+              <h1 class="text-lg font-bold text-center">สร้างโพสต์</h1>
+
+              <div class="flex justify-end">
+                <button @click="showPost = false" class="text-red-500">ปิด</button>
+              </div>
+              <div class="flex items-center space-x-4 mb-4">
         <div class="w-16 h-16 rounded-full overflow-hidden">
           <img :src="userData.profileImage" alt="Avatar" class="w-full h-full">
         </div>
         <div v-if="userStore.loaded && userStore.currentUser" class="text-center space-y-2">
           <h1 class="text-l font-bold">
   {{ userStore.currentUser.name }} 
-  <span v-html="postData.emoji.replace(userStore.currentUser.name, '')"></span>
+  <span v-if="postData.emoji">
+    รู้สึก<span v-html="postData.emoji"></span> <!-- แสดงเฉพาะอิโมจิ -->
+  </span>
 </h1>
-
         </div>
       </div>
 
-          <div class="mb-4">
-            <textarea v-model="postData.content" id="postContent" class="textarea textarea-bordered w-full" placeholder="เนื้อหา"></textarea>
-          </div>
+              <div class="my-4">
+                <textarea
+                  v-model="postData.content"
+                  class="textarea textarea-bordered w-full"
+                  rows="4"
+                  placeholder="เขียนข้อความ..."
+                ></textarea>
+              </div>
 
-          <div v-if="imagePreview" class="relative mt-4">
+              <div v-if="imagePreview" class="relative mt-4">
             <img v-if="!isVideo" :src="imagePreview" alt="Image Preview" class="w-full h-auto rounded-lg">
             <video v-if="isVideo" :src="imagePreview" controls class="w-full h-auto rounded-lg"></video>
             <button @click="removeImagePreview" class="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md text-gray-500 hover:text-red-500">
@@ -298,44 +307,25 @@ const selectEmoji = (emoji) => {
             </button>
           </div>
 
-          <div class="flex justify-end space-x-4 mt-4">
-            <div class="flex flex-col mb-4">
-              <input type="file" @change="handleFile" class="hidden" id="fileUpload" accept="image/*,video/*" />
-              <div v-if="showImageUpload" class="mt-4">
-                <label for="fileUpload" class="btn btn-ghost cursor-pointer">
-                  <span class="material-symbols-outlined" style="color: #1A73E8; font-size: 24px;">upload</span>
-                  <span>เลือกไฟล์</span>
-                </label>
-              </div>
+              <div class="flex items-center space-x-2 my-4">
+  <button @click="toggleEmojiDropdown" class="flex flew-rows justify-center items-center">
+    <span class="material-symbols-outlined text-blue-400">emoji_emotions</span>
+  </button>
+  <input type="file" @change="handleFile" accept="image/*, video/*" class="my-4"/>
+</div>
+
+
+              <button @click="submitPost" class="btn btn-outline btn-accent w-full text-white">โพสต์</button>
+
+              <!-- Emoji Picker -->
+<div v-if="showEmojiDropdown" class="absolute right-60 top-60">
+  <EmojiPicker @select="selectEmoji" />
+
+</div>
+
             </div>
-            <button @click="showImageUpload = !showImageUpload" type="button" class="flex items-center space-x-2">
-              <span class="material-symbols-outlined" style="color: #1A73E8; font-size: 40px;">imagesmode</span>
-            </button>
-
-            <!-- ปุ่มแสดงอิโมจิ dropdown -->
-            <div class="relative">
-              <button @click="toggleEmojiDropdown" type="button" class="flex items-center space-x-2">
-                <span class="material-symbols-outlined" style="color: #F7C02B; font-size: 40px;">sentiment_satisfied</span>
-              </button>
-
-              <!-- Dropdown แสดงอิโมจิ -->
-              <div v-if="showEmojiDropdown" class="absolute bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 w-64 max-h-48 overflow-y-auto">
-                <div class="grid grid-cols-1 gap-3 p-2">
-                  <button v-for="emoji in emojiStore.getEmoji" :key="emoji" @click="selectEmoji(emoji)" class="text-2xl p-2 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none w-full text-left">
-                    {{ emoji }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">โพสต์</button>
           </div>
-        </form>
-        <button @click="showPost = false" class="absolute top-2 right-2 text-gray-500 hover:text-red-400">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-    </div>
+        </transition>
   </UserLayout>
 </template>
 
