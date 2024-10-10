@@ -43,21 +43,13 @@ const sendMessage = (imageUrl = null) => {
 }
 </script>
 
+
+
 <template>
   <UserLayout>
     <div class="flex mt-6 mx-6 h-screen space-x-4">
       <Friend />
       <div class="w-3/4 flex flex-col h-full bg-gray-100 rounded-lg">
-        <div class="bg-neutral-content flex rounded-t-lg">
-          <div class="navbar rounded-tl-lg rounded-tr-lg bg-neutral text-neutral-content">
-            <div class="avatar online">
-              <div class="w-16 rounded-full">
-                <img alt="Chat" src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="flex-grow p-4 overflow-y-auto">
           <ul>
             <li v-for="message in messages" :key="message.id" class="mb-2">
