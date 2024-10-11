@@ -17,6 +17,7 @@ import {
 import { ref as storageRef, getDownloadURL, getStorage } from 'firebase/storage'
 import { getAuth } from 'firebase/auth'
 import { useUserStore } from '@/stores/user/user';
+import { defineComponent } from 'vue';
 
 export default defineComponent({
   setup(props, { emit }) {
