@@ -3,6 +3,9 @@ import { ref, onMounted, computed } from 'vue'
 import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useUserStore } from '@/stores/user/user'
+import { watch } from 'vue';
+import { defineComponent } from 'vue';
+import { defineEmits } from 'vue';
 
 // ดึงข้อมูลผู้ใช้จาก Firestore เมื่อคอมโพเนนต์ถูก mount
 const userStore = useUserStore()
@@ -12,11 +15,31 @@ const userGroups = ref([]);  // รายชื่อกลุ่มที่ผ
 const allGroups = ref([]);    // รายชื่อกลุ่มทั้งหมด
 const isGroupMode = ref(false) // สถานะสำหรับโหมดกลุ่ม
 
+
 const userData = computed(() => {
     return {
         profileImage: userStore.currentUser?.profileImage || '/profileImage.jpg',
     }
 })
+
+const emit = defineEmits(['select-friend']);
+const props = defineProps(['chatId']);
+
+// ฟังก์ชันโหลดข้อความ
+const loadMessages = () => {
+  if (props.chatId) {
+    // โหลดข้อความที่เกี่ยวข้องกับ chatId
+    console.log(`Loading messages for chat ID: ${props.chatId}`);
+  }
+};
+
+// ใช้ watch เพื่อเรียกใช้งานเมื่อ chatId เปลี่ยน
+watch(() => props.chatId, (newChatId) => {
+  if (newChatId) {
+    loadMessages();
+  }
+});
+
 
 // ฟังก์ชันดึงข้อมูลผู้ใช้
 const fetchUsers = async () => {
@@ -89,6 +112,15 @@ const fetchUserGroups = async () => {
     console.error("Error fetching user groups:", error);
   }
 };
+
+const onSelectFriend = (friendId) => {
+  // ตรวจสอบว่า friendId ถูกต้องหรือไม่
+  console.log(`Selected friend ID: ${friendId}`);
+  // อัปเดต currentChatId ใน parent
+  currentChatId.value = findChatIdByFriendId(friendId);
+  // หรือเรียกใช้งาน chat component ที่เกี่ยวข้อง
+};
+
 
 // ฟังก์ชันดึงข้อมูลกลุ่มทั้งหมด
 const fetchAllGroups = async () => {
@@ -164,6 +196,8 @@ const recommendedUsers = computed(() => {
   });
 });
 
+
+
 const recommendedGroups = computed(() => {
   const joinedGroupIds = new Set(userGroups.value.map(group => group.groupId));
   return allGroups.value.filter(group => !joinedGroupIds.has(group.id));
@@ -171,6 +205,9 @@ const recommendedGroups = computed(() => {
 
 const toggleGroupMode = () => {
   isGroupMode.value = !isGroupMode.value;
+}
+const selectFriend = (friendId) => {
+  emit('select-friend', friendId) // ส่ง event ไปยัง parent
 }
 
 onMounted(async () => {
@@ -212,7 +249,9 @@ onMounted(async () => {
               <p>{{ group.groupName || 'กลุ่ม' }}</p>
             </div>
           </li>
-          <li v-else v-for="friend in friends" :key="friend.id" class="flex items-center p-4 bg-indigo-800 rounded-lg shadow-md mb-2">
+          <li v-else v-for="friend in friends" :key="friend.id" 
+            @click="selectFriend(friend.friendId)" 
+            class="flex items-center p-4 bg-indigo-800 rounded-lg shadow-md mb-2">
             <div class="flex items-center space-x-4">
               <img
                 :src="friend.friendProfileImage || '/profileImage.jpg'" 

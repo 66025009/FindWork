@@ -1,14 +1,16 @@
 <script setup>
 import UserLayout from '@/layouts/UserLayout2.vue'
-import Friend from '@/components/friend.vue' // เปลี่ยนชื่อให้ตรงตาม conventions
+import Friend from '@/components/friend.vue'  // ถ้าไฟล์ชื่อ friend.vue 
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/user/user'
+import { getFirestore, doc, updateDoc, arrayUnion } from 'firebase/firestore' // นำเข้า Firestore
 
 const userStore = useUserStore()
 const chats = ref([]) // กำหนดสถานะสำหรับสนทนา
 const messages = ref([]) // กำหนดสถานะสำหรับข้อความ
 const newMessage = ref('') // กำหนดสถานะสำหรับข้อความใหม่
 const fileInput = ref(null) // สร้างการอ้างอิงไปยัง input file
+const currentChatId = ref(null)
 
 // ฟังก์ชันกระตุ้นการคลิกที่ input file
 const triggerFileInput = () => {
@@ -25,20 +27,36 @@ const handleImageUpload = (event) => {
     event.target.value = null // รีเซ็ต input file
   }
 }
+const selectFriend = (friendId) => {
+  // ค้นหาหมายเลข chatId ที่ตรงกับ friendId (คุณต้องเขียนฟังก์ชันนี้ให้ถูกต้อง)
+  currentChatId.value = findChatIdByFriendId(friendId)
+}
+
+const findChatIdByFriendId = (friendId) => {
+  // จำลองการคืนค่า chatId (ควรเชื่อมต่อกับ Firebase หรือฐานข้อมูลจริง)
+  return 'exampleChatId123' 
+}
 
 // ฟังก์ชันส่งข้อความ
-const sendMessage = (imageUrl = null) => {
-  if (newMessage.value.trim() || imageUrl) {
-    // สร้างข้อความใหม่
+const sendMessage = async (imageUrl = null) => {
+  if (currentChatId.value && (newMessage.value.trim() || imageUrl)) {
     const message = {
-      id: Date.now(), // หรือใช้ไอดีที่คุณสร้าง
+      id: Date.now(),
       text: newMessage.value,
       imageUrl: imageUrl,
       senderId: userStore.currentUser.id,
     }
-    
-    messages.value.push(message) // เพิ่มข้อความใหม่ไปยังข้อความ
-    newMessage.value = '' // รีเซ็ตข้อความใหม่
+
+    // อัปเดตข้อความใน Firestore
+    const db = getFirestore()
+    const chatRef = doc(db, 'chats', currentChatId.value)
+
+    await updateDoc(chatRef, {
+      messages: arrayUnion(message) // เพิ่มข้อความใหม่
+    })
+
+    messages.value.push(message) // เพิ่มข้อความใหม่ในสถานะท้องถิ่น
+    newMessage.value = '' 
   }
 }
 </script>
@@ -48,7 +66,7 @@ const sendMessage = (imageUrl = null) => {
 <template>
   <UserLayout>
     <div class="flex mt-6 mx-6 h-screen space-x-4">
-      <Friend />
+      <Friend @select-friend="selectFriend" />
       <div class="w-3/4 flex flex-col h-full bg-gray-100 rounded-lg">
         <div class="flex-grow p-4 overflow-y-auto">
           <ul>

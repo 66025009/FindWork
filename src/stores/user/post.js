@@ -18,6 +18,19 @@ import { ref as storageRef, getDownloadURL, getStorage } from 'firebase/storage'
 import { getAuth } from 'firebase/auth'
 import { useUserStore } from '@/stores/user/user';
 
+export default defineComponent({
+  setup(props, { emit }) {
+      const selectFriend = (friend) => {
+          // ใช้ emit ในที่นี้
+          emit('friend-selected', friend);
+      };
+
+      return {
+          selectFriend,
+      };
+  },
+});
+
 export const usePostStore = defineStore('postStore', {
   state: () => ({
     posts: [], 
