@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user/user'
 import { watch } from 'vue';
 import { defineComponent } from 'vue';
 import { defineEmits } from 'vue';
+import { defineProps } from 'vue';
 
 // ดึงข้อมูลผู้ใช้จาก Firestore เมื่อคอมโพเนนต์ถูก mount
 const userStore = useUserStore()

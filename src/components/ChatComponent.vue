@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { getFirestore, doc, onSnapshot } from 'firebase/firestore'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore'
 import { useUserStore } from '@/stores/user/user' // นำเข้า store สำหรับการจัดการผู้ใช้
 
 const props = defineProps(['chatId']) // รับ chatId จาก parent
@@ -28,6 +28,7 @@ const loadMessages = () => {
     })
   }
 }
+
 // โหลดข้อความครั้งแรกเมื่อ component ถูก mount
 onMounted(loadMessages)
 
@@ -46,6 +47,7 @@ const sendMessage = (imageUrl = null) => {
       text: newMessage.value,
       imageUrl: imageUrl,
       senderId: userStore.currentUser.id,
+      timestamp: new Date().toISOString() // เพิ่ม timestamp
     }
     
     // เพิ่มข้อความใหม่ไปยัง Firestore (ใช้ arrayUnion เพื่อเพิ่มข้อความใหม่)
@@ -86,6 +88,7 @@ const handleImageUpload = (event) => {
             <div :class="{'p-2 bg-blue-100 rounded-lg shadow max-w-xs mr-2': message.senderId === userStore.currentUser.id, 'p-2 bg-gray-200 rounded-lg shadow max-w-xs mr-2': message.senderId !== userStore.currentUser.id}">
               <p>{{ message.text }}</p>
               <img v-if="message.imageUrl" :src="message.imageUrl" class="mt-2 rounded-lg" style="max-width: 300px;" />
+              <small class="text-gray-500">{{ new Date(message.timestamp).toLocaleTimeString() }}</small> <!-- แสดงเวลา -->
             </div>
           </div>
         </li>

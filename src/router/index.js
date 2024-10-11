@@ -23,6 +23,7 @@ import AccountUserView from '@/views/admin/user/AccountUserView.vue'
 import InformationView from '@/views/admin/user/InformationView.vue'
 import NotificationAdView from '@/views/admin/user/Notification-adView.vue'
 import CommunityView from '@/views/admin/user/CommunityView.vue'
+import ChatComponent from '@/components/ChatComponent.vue'
 
 import { useAccountStore } from '@/stores/account'
 
@@ -43,6 +44,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView
+    },
+    {
+      path: '/chat/:friendId',
+      name: 'chat',
+      component: ChatComponent
     },
     {
       path: '/callback',

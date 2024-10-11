@@ -4,6 +4,7 @@ import Friend from '@/components/friend.vue'  // ถ้าไฟล์ชื่�
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/user/user'
 import { getFirestore, doc, updateDoc, arrayUnion } from 'firebase/firestore' // นำเข้า Firestore
+import ChatComponent from '@/components/ChatComponent.vue'
 
 const userStore = useUserStore()
 const chats = ref([]) // กำหนดสถานะสำหรับสนทนา
