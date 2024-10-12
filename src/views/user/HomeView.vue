@@ -253,7 +253,8 @@ const selectEmoji = (emoji) => {
             <p>เรื่องราวยอดนิยม</p>
           </div>
           <div class="divider px-4"></div>
-          <div class="flex flex-col items-start mb-8 mx-4 overflow-auto">
+          <!-- เพิ่ม max-height และ overflow-auto เพื่อให้มีสกอร์เลื่อน -->
+          <div class="flex flex-col items-start mb-8 mx-4 overflow-auto" style="max-height: 20rem;">
             <div v-for="item in news" :key="item.id" class="mb-4">
               <h2 class="font-bold text-lg">{{ item.title }}</h2>
               <p :class="['text-sm', { 'line-clamp-2': !expandedNewsId || expandedNewsId !== item.id }]">
