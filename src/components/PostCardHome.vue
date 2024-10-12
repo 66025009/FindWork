@@ -187,8 +187,9 @@ const toggleComments = (postId) => {
           </div>
           <div>
             <div class="text-center">
-              <h1 class="text-s font-bold text-left">{{ post.name || 'Unknown User' }}
-                <span> {{ post.emoji }}</span>
+              <h1 class="text-s font-bold text-left">
+                {{ post.name || 'Unknown User' }}
+                <span v-if="post.emoji"> รู้สึก {{ post.emoji }}</span>
               </h1>
             </div>
             <div class="text-sm text-gray-500">{{ timeAgo(post.postTime) }}</div>
@@ -244,7 +245,11 @@ const toggleComments = (postId) => {
             <p class="font-bold">ความคิดเห็น</p>
 
             <!-- ส่วนของความคิดเห็น -->
-            <div v-for="comment in postStore.comments.get(post.id) || []" :key="comment.id" class="flex items-center space-x-4 mb-2">
+            <div 
+              v-for="comment in (postStore.comments.get(post.id) || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))" 
+              :key="comment.id" 
+              class="flex items-center space-x-4 mb-2"
+            >
               <div class="w-12 h-12 rounded-full overflow-hidden">
                 <img :src="comment.profileImage || '/profileImage.jpg'" alt="Avatar" class="w-full h-full object-cover">
               </div>
@@ -256,15 +261,17 @@ const toggleComments = (postId) => {
               </div>
             </div>
 
+
             <!-- แบบฟอร์มเพิ่มความคิดเห็น -->
-            <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 rounded-full overflow-hidden">
-                <img :src="userData.profileImage" alt="Avatar" class="w-full h-full object-cover" />
-              </div>
-              <div class="flex items-center w-full bg-gray-200 p-2 rounded-md">
-                <input v-model="newComment" placeholder="เขียนความคิดเห็น..." class="flex-1 bg-gray-200 p-2 rounded-md">
-                <button @click="addComment(post.id)" class="material-symbols-outlined">send</button>
-              </div>
+            <div class="flex items-center mt-4">
+              <input 
+                v-model="newComment"
+                @keyup.enter="addComment(post.id)"
+                type="text"
+                placeholder="เพิ่มความคิดเห็น"
+                class="input input-bordered flex-1 mr-2"
+              />
+              <button @click="addComment(post.id)" class="btn btn-primary">ส่ง</button>
             </div>
           </div>
         </transition>

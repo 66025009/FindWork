@@ -91,8 +91,9 @@ watch(() => userStore.currentUser?.uid, (newUserId) => {
               </div>
               <div>
                 <div class="text-center">
-                  <h1 class="text-s font-bold text-left">{{ post.name || 'Unknown User' }}
-                    <span> {{ post.emoji }}</span>
+                  <h1 class="text-s font-bold text-left">
+                    {{ post.name || 'Unknown User' }}
+                    <span v-if="post.emoji"> รู้สึก {{ post.emoji }}</span>
                   </h1>
                 </div>
                 <div class="text-sm text-gray-500">{{ timeAgo(post.postTime) }}</div>

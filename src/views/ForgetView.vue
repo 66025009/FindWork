@@ -16,7 +16,7 @@ const forget = async () => {
   try {
     await accountStore.Forget(email.value)
     alert('ลิงก์รีเซ็ตรหัสผ่านถูกส่งไปยังอีเมลของคุณแล้ว')
-    router.push({ name: 'manage' }) 
+    router.push({ name: 'login' }) 
   } catch (error) {
     console.error('Error sending reset password email:', error)
     alert('ไม่สามารถส่งลิงก์รีเซ็ทรหัสผ่านได้')

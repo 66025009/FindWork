@@ -6,7 +6,6 @@ import LoginView from '../views/LoginView.vue'
 import Callback from '@/callback.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ForgetView from '../views/ForgetView.vue'
-import ManageView from '../views/ManageView.vue'
 import NetworkView from '@/views/user/NetworkView.vue'
 import NotificationsView from '@/views/user/NotificationsView.vue'
 import ProfileView from '@/views/user/ProfileView.vue'
@@ -64,11 +63,6 @@ const router = createRouter({
       path: '/forget',
       name: 'forget',
       component: ForgetView
-    },
-    {
-      path: '/manage',
-      name: 'manage',
-      component: ManageView
     },
     {
       path: '/',

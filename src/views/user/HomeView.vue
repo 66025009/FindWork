@@ -4,6 +4,7 @@ import { getAuth } from 'firebase/auth'
 import { db, storage } from '@/firebase'
 import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { RouterLink} from 'vue-router'
 import { useAccountStore } from '@/stores/account'
 import { useUserStore } from '@/stores/user/user'
 import { useEmojiStore } from '@/stores/user/emoji'
@@ -199,14 +200,14 @@ const selectEmoji = (emoji) => {
           </div>
           <div class="divider px-4"></div>
           <div class="flex flex-col mb-8 items-start">
-            <button class="btn btn-ghost flex items-center">
+            <RouterLink :to="{ name: 'network'}" class="btn btn-ghost flex items-center">    
               <span class="material-symbols-outlined">person</span>
               <h1 class="font-bold text-left ml-2">บุคคลที่คุณรู้จัก</h1>
-            </button>
-            <button class="btn btn-ghost flex items-center">
+            </RouterLink>
+            <RouterLink :to="{ name: 'network'}" class="btn btn-ghost flex items-center">
               <span class="material-symbols-outlined">Group</span>
               <h1 class="font-bold text-left ml-2">กลุ่ม</h1>
-            </button>
+            </RouterLink>
           </div>
         </div>
       </div>

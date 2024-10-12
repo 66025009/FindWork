@@ -13,17 +13,21 @@ const firebaseConfig = {
     appId: "1:103690621276:web:4514b42277a3ba36b9f199"
   }
 
-  const app = initializeApp(firebaseConfig)
-
-  const db = getFirestore(app)
-  connectFirestoreEmulator(db, '127.0.0.1', 8080)
-
-  const auth = getAuth(app)
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099')
   
+  const app = initializeApp(firebaseConfig)
+  
+  const db = getFirestore(app)
+  const auth = getAuth()
   const storage = getStorage()
-  connectStorageEmulator(storage, '127.0.0.1', 9199)
+  
+console.log(import.meta.env)
 
+  if (false && import.meta.env.DEV) {
+    // ย้าย emulator มาข้างล่างทั้งหมดแทน
+    connectFirestoreEmulator(db, '127.0.0.1', 8080)
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099')
+    connectStorageEmulator(storage, '127.0.0.1', 9199)
+  }
   export {
     db,
     auth,
